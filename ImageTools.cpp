@@ -22,10 +22,10 @@ void print_help()
 	std::cerr << "example: ImageTools --linear_upsample --ref referenceImage --in inputImage --out outputImage --spacing value\n" << std::endl;
 
 	std::cerr << "[ upsample image by itself ]" << std::endl;
-	std::cerr << "example: ImageTools --upsample_self --in inputImage --out outputImage --spacing_file spacing_file\n" << std::endl;
+	std::cerr << "example: ImageTools --resample_self --in inputImage --out outputImage --spacing_file spacing_file\n" << std::endl;
 
 	std::cerr << "[ label upsample image by itself ]" << std::endl;
-	std::cerr << "example: ImageTools --label_upsample_self --in inputImage --out outputImage --spacing_file spacing_file\n" << std::endl;
+	std::cerr << "example: ImageTools --label_resample_self --in inputImage --out outputImage --spacing_file spacing_file\n" << std::endl;
 
 	std::cerr << "[ resample image ]" << std::endl;
 	std::cerr << "example: ImageTools --resample --in inputImage --out outputImage --spacing_file spacing_file\n" << std::endl;
@@ -266,7 +266,7 @@ bool Nearest_UpSample(const std::string referenceImage, const std::string inputI
 	typedef itk::Image<PixelType, Dimension>				WriterImageType;
 	typedef itk::ImageFileWriter<WriterImageType>				WriterType;
 
-	ReaderType::Pointer reader_refer = ReaderType::New();
+	typename ReaderType::Pointer reader_refer = ReaderType::New();
 
 	const char* imagefile_refer = referenceImage.c_str();
 	if (!imagefile_refer) {
@@ -281,7 +281,7 @@ bool Nearest_UpSample(const std::string referenceImage, const std::string inputI
 
 
 	//2. load the upsample image candidate
-	ReaderType::Pointer reader_candidate = ReaderType::New();
+	typename ReaderType::Pointer reader_candidate = ReaderType::New();
 
 	const char* imagefile_candidate = inputImageFile.c_str();
 	if (!imagefile_candidate) {
@@ -294,7 +294,7 @@ bool Nearest_UpSample(const std::string referenceImage, const std::string inputI
 
 	std::cout << "Read " << imagefile_candidate << " DONE!" << std::endl;
 
-	ImageType::SpacingType spacing;
+	typename ImageType::SpacingType spacing;
 	spacing[0] = spacing_value;
 	spacing[1] = spacing_value;
 	spacing[2] = spacing_value;
@@ -306,15 +306,15 @@ bool Nearest_UpSample(const std::string referenceImage, const std::string inputI
 	//typedef itk::LinearInterpolateImageFunction< ImageType, double >				InterpolatorType;
 	typedef itk::NearestNeighborInterpolateImageFunction< ImageType, double >		InterpolatorType;
 	
-	InterpolatorType::Pointer interpolator = InterpolatorType::New();
+	typename InterpolatorType::Pointer interpolator = InterpolatorType::New();
 	//interpolator->SetSplineOrder(3);// only for Bspline interpolate
 
 	typedef itk::ResampleImageFilter<ImageType, ImageType>						ResampleFilterType;
 
-	TransformType::Pointer transform = TransformType::New();
+	typename TransformType::Pointer transform = TransformType::New();
 	transform->SetIdentity();
 
-	ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
+	typename ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
 	resampleFilter->SetTransform(transform);
 	resampleFilter->SetInterpolator(interpolator);
 	resampleFilter->SetOutputOrigin(reader_refer->GetOutput()->GetOrigin());
@@ -325,7 +325,7 @@ bool Nearest_UpSample(const std::string referenceImage, const std::string inputI
 	resampleFilter->SetInput(reader_candidate->GetOutput());
 
 	// 4. save the upsampled image
-	WriterType::Pointer writer = WriterType::New();
+	typename WriterType::Pointer writer = WriterType::New();
 	writer->SetFileName(outputImageFile.c_str());
 	writer->SetInput(resampleFilter->GetOutput());
 	writer->Update();
@@ -424,17 +424,17 @@ template <typename T>
 bool Linear_UpSample(const std::string referenceImage, const std::string inputImageFile, const std::string outputImageFile, double spacing_value) {
 
 	//Step: 1. load the reference image
-	typedef T												PixelType;
+	//typedef T												PixelType;
 	const unsigned int Dimension = 3;
 
-	typedef itk::Image<PixelType, Dimension>				ImageType;
+	typedef itk::Image<T, Dimension>						ImageType;
 	typedef itk::ImageFileReader<ImageType>					ReaderType;
 
-	typedef T 												T_WritePixel;
-	typedef itk::Image<T_WritePixel, Dimension>				WriterImageType;
+	//typedef T 												T_WritePixel;
+	typedef itk::Image<T, Dimension>							WriterImageType;
 	typedef itk::ImageFileWriter<WriterImageType>				WriterType;
 
-	ReaderType::Pointer reader_refer = ReaderType::New();
+	typename ReaderType::Pointer reader_refer = ReaderType::New();
 
 	const char* imagefile_refer = referenceImage.c_str();
 	if (!imagefile_refer) {
@@ -449,7 +449,7 @@ bool Linear_UpSample(const std::string referenceImage, const std::string inputIm
 
 
 	//2. load the upsample image candidate
-	ReaderType::Pointer reader_candidate = ReaderType::New();
+	typename ReaderType::Pointer reader_candidate = ReaderType::New();
 
 	const char* imagefile_candidate = inputImageFile.c_str();
 	if (!imagefile_candidate) {
@@ -462,7 +462,7 @@ bool Linear_UpSample(const std::string referenceImage, const std::string inputIm
 
 	std::cout << "Read " << imagefile_candidate << " DONE!" << std::endl;
 
-	ImageType::SpacingType spacing;
+	typename ImageType::SpacingType spacing;
 	spacing[0] = spacing_value;
 	spacing[1] = spacing_value;
 	spacing[2] = spacing_value;
@@ -474,15 +474,15 @@ bool Linear_UpSample(const std::string referenceImage, const std::string inputIm
 	typedef itk::LinearInterpolateImageFunction< ImageType, double >				InterpolatorType;
 	//typedef itk::NearestNeighborInterpolateImageFunction< ImageType, TYPE >		InterpolatorType;
 
-	InterpolatorType::Pointer interpolator = InterpolatorType::New();
+	typename InterpolatorType::Pointer interpolator = InterpolatorType::New();
 	//interpolator->SetSplineOrder(3);// only for Bspline interpolate
 
 	typedef itk::ResampleImageFilter<ImageType, ImageType>						ResampleFilterType;
 
-	TransformType::Pointer transform = TransformType::New();
+	typename TransformType::Pointer transform = TransformType::New();
 	transform->SetIdentity();
 
-	ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
+	typename ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
 	resampleFilter->SetTransform(transform);
 	resampleFilter->SetInterpolator(interpolator);
 	resampleFilter->SetOutputOrigin(reader_refer->GetOutput()->GetOrigin());
@@ -493,7 +493,7 @@ bool Linear_UpSample(const std::string referenceImage, const std::string inputIm
 	resampleFilter->SetInput(reader_candidate->GetOutput());
 
 	// 4. save the upsampled image
-	WriterType::Pointer writer = WriterType::New();
+	typename WriterType::Pointer writer = WriterType::New();
 	writer->SetFileName(outputImageFile.c_str());
 	writer->SetInput(resampleFilter->GetOutput());
 	writer->Update();
@@ -588,7 +588,7 @@ bool Linear_UpSample(const std::string referenceImage, const std::string inputIm
 //		4. save the upsampled image
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T>
-bool UpSample_Self(const std::string input_path, const std::string output_path, const std::string spacing_path) {
+bool Resample_Self(const std::string input_path, const std::string output_path, const std::string spacing_path) {
 	
 	//Step: 1. load the upsample image candidate
 	typedef T												PixelType;
@@ -600,7 +600,7 @@ bool UpSample_Self(const std::string input_path, const std::string output_path, 
 	typedef itk::Image<PixelType, Dimension>				WriterImageType;
 	typedef itk::ImageFileWriter<WriterImageType>				WriterType;
 
-	ReaderType::Pointer reader_candidate = ReaderType::New();
+	typename ReaderType::Pointer reader_candidate = ReaderType::New();
 
 	const char* imagefile_candidate = input_path.c_str();
 	if (!imagefile_candidate) {
@@ -614,17 +614,17 @@ bool UpSample_Self(const std::string input_path, const std::string output_path, 
 	std::cout << "Read " << imagefile_candidate << " DONE!" << std::endl;
 
 	//2. compute the output size
-	ImageType::Pointer image = reader_candidate->GetOutput();
-	ImageType::RegionType region = image->GetLargestPossibleRegion();
-	const ImageType::SizeType size = region.GetSize();
+	typename ImageType::Pointer image = reader_candidate->GetOutput();
+	typename ImageType::RegionType region = image->GetLargestPossibleRegion();
+	const typename ImageType::SizeType size = region.GetSize();
 	std::cout << "Input size: " << size << std::endl;
 
-	const ImageType::SpacingType& sp = image->GetSpacing();
+	const typename ImageType::SpacingType& sp = image->GetSpacing();
 
 	std::cout << "Original Spacing = ";
 	std::cout << sp[0] << ", " << sp[1] << ", " << sp[2] << std::endl;
 
-	ImageType::PointType physicalSize;
+	typename ImageType::PointType physicalSize;
 	for (int i = 0; i < 3; ++i) {
 		physicalSize[i] = size[i] * sp[i];
 	}
@@ -662,12 +662,12 @@ bool UpSample_Self(const std::string input_path, const std::string output_path, 
 
 	std::cout << "Load spacing success!" << '\n' << "spacing = " << str_spacing[0] << ", " << str_spacing[1] << ", " << str_spacing[2] << std::endl;
 
-	ImageType::SpacingType spacing;
+	typename ImageType::SpacingType spacing;
 	spacing[0] = atof(str_spacing[0].c_str());
 	spacing[1] = atof(str_spacing[1].c_str());
 	spacing[2] = atof(str_spacing[2].c_str());
 
-	ImageType::SizeType resampleSize;
+	typename ImageType::SizeType resampleSize;
 	for (int i = 0; i < 3; ++i) {
 		resampleSize[i] = static_cast<unsigned int>(physicalSize[i] / spacing[i] + 0.5);
 	}
@@ -682,7 +682,7 @@ bool UpSample_Self(const std::string input_path, const std::string output_path, 
 	typedef itk::NearestNeighborInterpolateImageFunction< ImageType, double >		InterpolatorType;
 	//typedef itk::LabelImageGaussianInterpolateImageFunction<ImageType, double>		InterpolatorType;
 
-	InterpolatorType::Pointer interpolator = InterpolatorType::New();
+	typename InterpolatorType::Pointer interpolator = InterpolatorType::New();
 	//interpolator->SetSplineOrder(3);// only for Bspline interpolate
 
 	//interpolator->SetSigma(1.0);
@@ -690,10 +690,10 @@ bool UpSample_Self(const std::string input_path, const std::string output_path, 
 
 	typedef itk::ResampleImageFilter<ImageType, ImageType>						ResampleFilterType;
 
-	TransformType::Pointer transform = TransformType::New();
+	typename TransformType::Pointer transform = TransformType::New();
 	transform->SetIdentity();
 
-	ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
+	typename ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
 	resampleFilter->SetTransform(transform);
 	resampleFilter->SetInterpolator(interpolator);
 	resampleFilter->SetOutputOrigin(reader_candidate->GetOutput()->GetOrigin());
@@ -704,7 +704,7 @@ bool UpSample_Self(const std::string input_path, const std::string output_path, 
 	resampleFilter->SetInput(reader_candidate->GetOutput());
 
 	// 4. save the upsampled image
-	WriterType::Pointer writer = WriterType::New();
+	typename WriterType::Pointer writer = WriterType::New();
 	writer->SetFileName(output_path.c_str());
 	writer->SetInput(resampleFilter->GetOutput());
 	writer->Update();
@@ -719,7 +719,7 @@ bool UpSample_Self(const std::string input_path, const std::string output_path, 
 //		3. BSpline/Linear upsample 
 //		4. save the upsampled image
 ///////////////////////////////////////////////////////////////////////////////
-bool Label_UpSample_Self(const std::string input_path, const std::string output_path, const std::string spacing_path) {
+bool Label_Resample_Self(const std::string input_path, const std::string output_path, const std::string spacing_path) {
 
 	//Step: 1. load the upsample image candidate
 	typedef short												PixelType;
@@ -3407,8 +3407,8 @@ int main(int argc, char * argv[])
 		options_description functional("Functional options (must pick one)");
 		functional.add_options()("nearest_upsample", "upsample an image");
 		functional.add_options()("linear_upsample", "upsample an image"); 
-		functional.add_options()("upsample_self", "upsample an image by itself");
-		functional.add_options()("label_upsample_self", "upsample an image by label interpolation");
+		functional.add_options()("resample_self", "upsample an image by itself");
+		functional.add_options()("label_resample_self", "upsample an image by label interpolation");
 		functional.add_options()("resample", "resample image"); 
 		functional.add_options()("downsample", "downsample an image");
 		functional.add_options()("mask", "convert image format/change data type");
@@ -3490,6 +3490,8 @@ int main(int argc, char * argv[])
 
 			LoadPixelType type = ReadPixelType(input_path.c_str());
 
+			std::cout << "Type index =  " << type << std::endl;
+
 			switch (type)
 			{
 			case _UCHAR: Nearest_UpSample<unsigned char>(ref_path, input_path, output_path, spacing_value);  break;
@@ -3521,6 +3523,8 @@ int main(int argc, char * argv[])
 		
 			LoadPixelType type = ReadPixelType(input_path.c_str());
 
+			std::cout << "Type index =  " << type << std::endl;
+
 			switch (type)
 			{
 			case _UCHAR: Linear_UpSample<unsigned char>(ref_path, input_path, output_path, spacing_value);  break;
@@ -3537,7 +3541,7 @@ int main(int argc, char * argv[])
 			}
 
 		}
-		else if (vm.count("upsample_self")) // upsample by itself
+		else if (vm.count("resample_self")) // upsample by itself
 		{
 			std::string input_path = Get<std::string>(vm, "in");
 			std::string output_path = Get<std::string>(vm, "out");
@@ -3551,22 +3555,24 @@ int main(int argc, char * argv[])
 
 			LoadPixelType type = ReadPixelType(input_path.c_str());
 
+			std::cout << "Type index =  " << type << std::endl;
+
 			switch (type)
 			{
-			case _UCHAR: UpSample_Self<unsigned char>(input_path, output_path, spacing_file);  break;
-			case _CHAR: UpSample_Self<char>(input_path, output_path, spacing_file);  break;
-			case _USHORT: UpSample_Self<unsigned short>(input_path, output_path, spacing_file);  break;
-			case _SHORT: UpSample_Self<short>(input_path, output_path, spacing_file);  break;
-			case _UINT: UpSample_Self<unsigned int>(input_path, output_path, spacing_file);  break;
-			case _INT: UpSample_Self<int>(input_path, output_path, spacing_file);  break;
-			case _ULONG: UpSample_Self<unsigned long>(input_path, output_path, spacing_file);  break;
-			case _LONG: UpSample_Self<long>(input_path, output_path, spacing_file);  break;
-			case _FLOAT: UpSample_Self<float>(input_path, output_path, spacing_file);  break;
-			case _DOUBLE: UpSample_Self<double>(input_path, output_path, spacing_file);  break;
+			case _UCHAR: Resample_Self<unsigned char>(input_path, output_path, spacing_file);  break;
+			case _CHAR: Resample_Self<char>(input_path, output_path, spacing_file);  break;
+			case _USHORT: Resample_Self<unsigned short>(input_path, output_path, spacing_file);  break;
+			case _SHORT: Resample_Self<short>(input_path, output_path, spacing_file);  break;
+			case _UINT: Resample_Self<unsigned int>(input_path, output_path, spacing_file);  break;
+			case _INT: Resample_Self<int>(input_path, output_path, spacing_file);  break;
+			case _ULONG: Resample_Self<unsigned long>(input_path, output_path, spacing_file);  break;
+			case _LONG: Resample_Self<long>(input_path, output_path, spacing_file);  break;
+			case _FLOAT: Resample_Self<float>(input_path, output_path, spacing_file);  break;
+			case _DOUBLE: Resample_Self<double>(input_path, output_path, spacing_file);  break;
 			default: std::cout << "unrecognized pixel type"; break;
 			}
 		}
-		else if (vm.count("label_upsample_self")) // upsample by label interpolation
+		else if (vm.count("label_resample_self")) // upsample by label interpolation
 		{
 			std::string input_path = Get<std::string>(vm, "in");
 			std::string output_path = Get<std::string>(vm, "out");
@@ -3576,7 +3582,7 @@ int main(int argc, char * argv[])
 			std::cout << "output_path = " << output_path << std::endl;
 			std::cout << "spacing_file = " << spacing_file << std::endl;
 
-			Label_UpSample_Self(input_path, output_path, spacing_file);
+			Label_Resample_Self(input_path, output_path, spacing_file);
 		}
 		else if (vm.count("resample")) // resample
 		{
