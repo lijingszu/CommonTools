@@ -1,3 +1,4 @@
+< std::endl;
 // ImageTools contain some small tools for medical image processing
 // Write by Noah Jing Li based on Boost library imitated FISH library.
 
@@ -109,6 +110,10 @@ void print_help()
 
 	std::cerr << "[ normalize the image by setting its mean to zero and variance to one ]" << std::endl;
 	std::cerr << "example: ImageTools --normalize --in inputImage --out outputImage \n" << std::endl;
+
+	std::cerr << "[ majority binary vote ]" << std::endl;
+	std::cerr << "example: ImageTools --majority_vote --inputPath inputImagePath --out outputImage \n" << std::endl;
+
 }
 
 //void CreateImage(ImageType::Pointer image)
@@ -3463,6 +3468,108 @@ bool Normalize(const std::string input_path, const std::string output_path) {
 	return EXIT_SUCCESS;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+//Goal: generate the segmentation by majority vote
+//Step: 1. read the input image 
+//      2. marjority vote
+//		3. output the segmentation image to file
+///////////////////////////////////////////////////////////////////////////////
+bool Majority_Vote(const std::string inputPath, const std::string output_path) {
+
+	//1. read the input image
+	typedef double										PixelType;
+	typedef short 										OutputType;
+	const unsigned int Dimension = 3;
+
+	typedef itk::Image<PixelType, Dimension>      		ImageType;
+	typedef itk::Image<OutputType, Dimension>      		OutputImageType;
+
+	typedef itk::ImageFileReader<ImageType>      	 	ReaderType;
+
+	const char* landmarkfile = inputPath.c_str();
+
+	std::ifstream infile;
+	infile.open(landmarkfile, std::ifstream::in);
+
+	if (!infile) {
+		std::cerr << "Load input landmark error!" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	std::vector<ImageType::Pointer> images;
+	std::string str_path;
+	while( getline(infile, str_path) ) {
+
+		ReaderType::Pointer reader = ReaderType::New();
+
+		std::cout << "str_path = " << str_path << std::endl;
+
+		const char* filename = str_path.c_str();
+		if (!filename) {
+			std::cout << "Load input file error!" << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		reader->SetFileName(filename);
+		reader->Update();
+
+		images.push_back( reader->GetOutput() );
+	
+	}
+
+	std::cout << "Read image success!" << std::endl;
+
+	infile.close();
+
+	std::cout << "images' size = " << images.size() << std::endl;
+
+	//2. marjority vote
+	typedef itk::ImageRegionIterator<ImageType> 				IteratorType;
+	typedef itk::ImageRegionConstIterator<ImageType> 			ConstIteratorType;
+
+	IteratorType outIter( images[0], images[0]->GetRequestedRegion() );
+
+	//itk::Offset count = 0;
+	for (outIter.GoToBegin(); !outIter.IsAtEnd(); outIter++) {
+
+		int label0=0;
+		int label1=0;
+
+		for (int j = 0; j < images.size(); j++) {
+			ConstIteratorType tmpIter( images[j], images[j]->GetRequestedRegion() );
+
+			tmpIter.GoToBegin();
+			tmpIter.SetIndex( outIter.GetIndex() );
+
+			if ( tmpIter.Get() == 1 ) 
+				label1++;
+			else 
+				label0++;
+
+		}
+
+		outIter.Set( (label0 > label1 ? 0 : 1) );
+
+	}
+
+	//3. output the segmentation image to file
+	typedef itk::CastImageFilter< ImageType, OutputImageType > 					CastFilterType;
+	CastFilterType::Pointer castFilter = CastFilterType::New();
+	castFilter->SetInput(images[0]);
+
+	typedef itk::ImageFileWriter<OutputImageType> 								WriteType;
+	WriteType::Pointer writer = WriteType::New();
+
+	writer->SetFileName(output_path.c_str());
+	writer->SetInput(castFilter->GetOutput());
+	writer->Update();
+
+	std::cout << "Write transformed image to file success!" << std::endl;
+
+	return EXIT_SUCCESS;
+	
+}
+
 int main(int argc, char * argv[])
 {
 	try {
@@ -3471,6 +3578,7 @@ int main(int argc, char * argv[])
 
 		options_description generic("Generic options");
 		generic.add_options()("help", "display helper information");
+
 
 		options_description functional("Functional options (must pick one)");
 		functional.add_options()("nearest_upsample", "upsample an image");
@@ -3504,7 +3612,9 @@ int main(int argc, char * argv[])
 		functional.add_options()("cutoff", "cut off the histogram");
 		functional.add_options()("extract_landmark_femur", "extract left-top and right-bottom landmarks of femur");
 		functional.add_options()("normalize", "normalize the image by setting its mean to zero and variance to one");
-		
+		functional.add_options()("majority_vote", "majority binary vote");
+
+
 		options_description params("Parameter options");
 		params.add_options()("in", value<std::string>(), "input image");
 		params.add_options()("ref", value<std::string>(), "reference image");
@@ -3523,6 +3633,8 @@ int main(int argc, char * argv[])
 		params.add_options()("beta", value<double>(), "beta");
 		params.add_options()("ratio", value<double>(), "ratio");
 		params.add_options()("spacing_file", value<std::string>(), "spacing file");
+		params.add_options()("inputPath", value<std::string>(), "input image list");
+
 
 		options_description cmd_options;
 		cmd_options.add(generic).add(functional).add(params);
@@ -3979,6 +4091,16 @@ int main(int argc, char * argv[])
 			std::cout << "output_path = " << output_path << std::endl;
 
 			Normalize(input_path, output_path);
+		}
+		else if (vm.count("majority_vote")) //majority_vote
+		{
+			std::string inputPath = Get<std::string>(vm, "inputPath");
+			std::string output_path = Get<std::string>(vm, "out");
+
+			std::cout << "inputPath = " << inputPath << std::endl;
+			std::cout << "output_path = " << output_path << std::endl;
+
+			Majority_Vote(inputPath, output_path);
 		}
 		else
 		{
