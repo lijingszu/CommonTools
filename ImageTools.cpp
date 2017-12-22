@@ -106,6 +106,9 @@ void print_help()
 
 	std::cerr << "[ extract left-top and right-bottom landmarks for femur ROI based on bounding box ]" << std::endl;
 	std::cerr << "example: ImageTools --extract_landmark_femur --in inputLabelImage --start_pt filename --end_pt filename  --out outputMaskImage \n" << std::endl;
+
+	std::cerr << "[ normalize the image by setting its mean to zero and variance to one ]" << std::endl;
+	std::cerr << "example: ImageTools --normalize --in inputImage --out outputImage \n" << std::endl;
 }
 
 //void CreateImage(ImageType::Pointer image)
@@ -3393,7 +3396,72 @@ bool ExtractLandmarkOfFemur(const std::string input_path, const std::string star
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+//Goal: normalize the image by setting its mean to zero and variance to one
+//Step: 1. read the input image
+//      2. normalize the input image
+//		3. output the normalized image to file
+///////////////////////////////////////////////////////////////////////////////
+bool Normalize(const std::string input_path, const std::string output_path) {
+	
+	//NB: since this filter normalizes the data to lie within -1 to 1, integral types will produce an image that DOES NOT HAVE a unit variance.
 
+	//1. read the input image
+	typedef double										PixelType;
+	const unsigned int Dimension = 3;
+
+	typedef itk::Image<PixelType, Dimension>      		ImageType;
+
+	typedef itk::ImageFileReader<ImageType>      	 	ReaderType;
+
+	ReaderType::Pointer reader = ReaderType::New();
+
+	const char* filename = input_path.c_str();
+	if (!filename) {
+		std::cout << "Load input file error!" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	reader->SetFileName(filename);
+	reader->Update();
+
+	std::cout << "Read image success!" << std::endl;
+
+	ImageType::Pointer image = reader->GetOutput();
+
+	//2. normalize the input image
+	typedef itk::NormalizeImageFilter< ImageType, ImageType >				NormalizeFilterType;
+	NormalizeFilterType::Pointer normalizeFilter = NormalizeFilterType::New();
+	normalizeFilter->SetInput(image);
+
+	typedef itk::StatisticsImageFilter< ImageType > 						StatisticsFilterType;
+	StatisticsFilterType::Pointer statistics1 = StatisticsFilterType::New();
+	statistics1->SetInput(reader->GetOutput());
+
+	StatisticsFilterType::Pointer statistics2 = StatisticsFilterType::New();
+	statistics2->SetInput(normalizeFilter->GetOutput());
+
+	statistics1->Update();
+	statistics2->Update();
+
+	std::cout << "Before normalization: Mean = " << statistics1->GetMean() << 
+						", Variance = " << statistics1->GetVariance() << std::endl;
+
+	std::cout << "After normalization: Mean = " << statistics2->GetMean() << 
+						", Variance = " << statistics2->GetVariance() << std::endl;
+
+	//3. output the normalized image to file
+	typedef itk::ImageFileWriter<ImageType> 								WriteType;
+	WriteType::Pointer writer = WriteType::New();
+
+	writer->SetFileName(output_path.c_str());
+	writer->SetInput(normalizeFilter->GetOutput());
+	writer->Update();
+
+	std::cout << "Write transformed image to file success!" << std::endl;
+
+	return EXIT_SUCCESS;
+}
 
 int main(int argc, char * argv[])
 {
@@ -3435,7 +3503,7 @@ int main(int argc, char * argv[])
 		functional.add_options()("judge", "judge two image is same or not");
 		functional.add_options()("cutoff", "cut off the histogram");
 		functional.add_options()("extract_landmark_femur", "extract left-top and right-bottom landmarks of femur");
-		
+		functional.add_options()("normalize", "normalize the image by setting its mean to zero and variance to one");
 		
 		options_description params("Parameter options");
 		params.add_options()("in", value<std::string>(), "input image");
@@ -3901,6 +3969,16 @@ int main(int argc, char * argv[])
 			std::cout << "end_pt = " << end_pt << std::endl;
 
 			ExtractLandmarkOfFemur(input_path, start_pt, end_pt, output_path);
+		}
+		else if (vm.count("normalize")) //normalize
+		{
+			std::string input_path = Get<std::string>(vm, "in");
+			std::string output_path = Get<std::string>(vm, "out");
+
+			std::cout << "input_path = " << input_path << std::endl;
+			std::cout << "output_path = " << output_path << std::endl;
+
+			Normalize(input_path, output_path);
 		}
 		else
 		{
