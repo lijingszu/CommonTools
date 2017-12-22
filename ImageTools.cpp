@@ -1,4 +1,3 @@
-< std::endl;
 // ImageTools contain some small tools for medical image processing
 // Write by Noah Jing Li based on Boost library imitated FISH library.
 
@@ -3567,7 +3566,7 @@ bool Majority_Vote(const std::string inputPath, const std::string output_path) {
 	std::cout << "Write transformed image to file success!" << std::endl;
 
 	return EXIT_SUCCESS;
-	
+
 }
 
 int main(int argc, char * argv[])
